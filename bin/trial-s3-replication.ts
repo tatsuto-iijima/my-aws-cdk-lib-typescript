@@ -2,6 +2,7 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import * as s3Stack from '../lib/s3-stack';
+import * as cloudtrailStack from '../lib/cloudtrail-stack';
 
 const app = new cdk.App();
 
@@ -59,3 +60,35 @@ const s3ReplicationSrcStack = new s3Stack.ReplicationSrcStack(app, 'TrialS3Repli
 });
 
 s3ReplicationDestStacks.forEach(stack => s3ReplicationSrcStack.addDependency(stack));
+
+const s3EventLoggingTrailStack = new cloudtrailStack.S3EventLoggingTrailStack(app, 'TrialS3EventLoggingTrailStack', {
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: 'us-east-1',
+  },
+  bucket: {
+    autoDeleteObjects: true,
+    removalPolicy: cdk.RemovalPolicy.DESTROY,
+  },
+});
+
+[
+  s3ReplicationSrcStack,
+  ...s3ReplicationDestStacks,
+].forEach(stack => {
+  s3EventLoggingTrailStack.addDependency(stack);
+});
+
+s3EventLoggingTrailStack.addS3EventSelectorToCloudTrail([
+  s3ReplicationSrcStack,
+  ...s3ReplicationDestStacks,
+].map(stack => ({ bucket: stack.bucket })));
+
+s3EventLoggingTrailStack.addAthenaWorkGroup({
+  recursiveDeleteOption: true,
+  workGroupConfiguration: {
+    resultConfiguration: {
+      outputLocation: s3EventLoggingTrailStack.bucket.s3UrlForObject('athena'),
+    },
+  },
+});
