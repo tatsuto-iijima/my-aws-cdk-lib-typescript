@@ -13,22 +13,49 @@ import * as fs from 'fs';
 const stacks = [
   {
     name: 'TrialS3ReplicationSrcStack',
-    region: 'us-east-1',
+    region: 'ap-northeast-1',
     type: 'src',
   },
   {
     name: 'TrialS3ReplicationDest1Stack',
-    region: 'us-east-2',
+    region: 'ap-northeast-3',
     type: 'dest',
   },
   {
     name: 'TrialS3ReplicationDest2Stack',
-    region: 'us-west-1',
+    region: 'ap-northeast-2',
+    type: 'dest',
+  },
+  {
+    name: 'TrialS3ReplicationDest3Stack',
+    region: 'ap-southeast-2',
+    type: 'dest',
+  },
+  {
+    name: 'TrialS3ReplicationDest4Stack',
+    region: 'eu-central-1',
+    type: 'dest',
+  },
+  {
+    name: 'TrialS3ReplicationDest5Stack',
+    region: 'us-east-1',
+    type: 'dest',
+  },
+  {
+    name: 'TrialS3ReplicationDest6Stack',
+    region: 'af-south-1',
+    type: 'dest',
+  },
+  {
+    name: 'TrialS3ReplicationDest7Stack',
+    region: 'sa-east-1',
     type: 'dest',
   },
 ];
 
 const testBucketKey = 'README.md';
+// const testBucketKey = 'test-1kb.txt';
+// const testBucketKey = 'test-5mb.bin';
 
 let srcBucket: {
   name: string;
@@ -45,7 +72,7 @@ beforeAll(async() => {
   const responses = await Promise.all(stacks.map(async stack => {
     const client = new CloudFormationClient({
       region: stack.region,
-    });
+          });
     const input = {
       StackName: stack.name,
     };
@@ -104,14 +131,14 @@ test('test', async() => {
 
   const results = await Promise.all(destBuckets.map(async bucket => {
     let result;
+    const destClient = new S3Client({
+      region: bucket.region,
+    });
+    const destInput = {
+      Bucket: bucket.name,
+    };
+    const destCommand = new ListObjectsV2Command(destInput);
     for (let count = 0; count < 30; count++) {
-      const destClient = new S3Client({
-        region: bucket.region,
-      });
-      const destInput = {
-        Bucket: bucket.name,
-      };
-      const destCommand = new ListObjectsV2Command(destInput);
       try {
         const destResponse = await destClient.send(destCommand);
         result = destResponse.Contents?.filter(content => content.Key === testBucketKey);
@@ -126,5 +153,13 @@ test('test', async() => {
     }
     return result;
   }));
-  expect(results).toMatchObject([[{Key: testBucketKey}],[{Key: testBucketKey}]]);
+  expect(results).toMatchObject([
+    [{Key: testBucketKey}],
+    [{Key: testBucketKey}],
+    [{Key: testBucketKey}],
+    [{Key: testBucketKey}],
+    [{Key: testBucketKey}],
+    [{Key: testBucketKey}],
+    [{Key: testBucketKey}],
+  ]);
 }, 1000000);

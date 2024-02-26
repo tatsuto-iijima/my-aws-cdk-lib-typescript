@@ -7,8 +7,13 @@ import * as cloudtrailStack from '../lib/cloudtrail-stack';
 const app = new cdk.App();
 
 const s3ReplicationDestStacks = [
-  'us-east-2',
-  'us-west-1',
+  'ap-northeast-3',
+  'ap-northeast-2',
+  'ap-southeast-2',
+  'eu-central-1',
+  'us-east-1',
+  'af-south-1',
+  'sa-east-1',
 ].map((region, index) => new s3Stack.ReplicationDestStack(app, `TrialS3ReplicationDest${index + 1}Stack`, {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
@@ -25,7 +30,7 @@ const s3ReplicationDestStacks = [
 const s3ReplicationSrcStack = new s3Stack.ReplicationSrcStack(app, 'TrialS3ReplicationSrcStack', {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: 'us-east-1',
+    region: 'ap-northeast-1',
   },
   replicatingObjects: {
     replicationConfiguration: {
@@ -52,6 +57,7 @@ const s3ReplicationSrcStack = new s3Stack.ReplicationSrcStack(app, 'TrialS3Repli
       })),
     },
     bucketProperty: {
+      bucketName: cdk.PhysicalName.GENERATE_IF_NEEDED,
       // versioned: true,  /** default */
       autoDeleteObjects: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
